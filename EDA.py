@@ -54,4 +54,46 @@ print("Patient types:", patientType_values)
 splitDFs = {tp: df[df["PatientType"] == tp].copy() for tp in patientType_values}
 print("splitDFs", splitDFs)
 
+# Daily counts of scans by patient type
+df["CallDate"] = df["Datetime"].dt.date
+daily_counts = (
+    df.groupby(["PatientType", "CallDate"])
+    .size()
+    .unstack(level=0)
+    .fillna(0)
+    .astype(int)
+)
+
+# print(daily_counts.head(10))
+
+# Histogram for skewness checking
+# mean & std sensitive to outliers
+# Median & 90th percentile — robust indicators
+# Q-Q plot — see whether Normal is a bad assumption
+# Helps us choose: gamma/lognormal vs empirical bootstrap
+# Here we are triying to extracts the key statistics and visual checks needed
+# to decide the correct duration distributions for each patient type, which is
+# essential input for the discrete-event simulation and optimization of slot lengths
+
+for patientType, sub in splitDFs.items():
+    print(f"\n--- Type {patientType} summary ---")
+    print("Number of patient in type I group:", len(sub))
+
+    stats = sub["Duration"].agg(["mean", "std", "median"])
+    p90 = np.percentile(sub["Duration"], 90)
+
+    print(stats)
+    print("p90:", p90)
+
+    plt.figure(figsize=(10, 4))
+    plt.subplot(1, 2, 1)
+    plt.hist(sub["Duration"], bins=20)
+    plt.title(f"Histogram durations - Type {patientType}")
+
+    plt.subplot(1, 2, 2)
+    st.probplot(sub["Duration"], dist="norm", plot=plt)
+    plt.suptitle(f"Q-Q plot (normal) - Type {patientType}")
+    plt.show()
+
+
 # print(df.head())
