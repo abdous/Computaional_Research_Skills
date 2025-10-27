@@ -51,11 +51,11 @@ df["Datetime"] = df.apply(make_datetime, axis=1)
 #  print(f"Missing datetime values: {df['PatientType'].isna().sum()}") # there are no missing patient type entries
 patientType_values = df["PatientType"].unique()
 print("Patient types:", patientType_values)
+df["CallDate"] = df["Datetime"].dt.date
 splitDFs = {tp: df[df["PatientType"] == tp].copy() for tp in patientType_values}
-print("splitDFs", splitDFs)
+# print("splitDFs", splitDFs)
 
 # Daily counts of scans by patient type
-df["CallDate"] = df["Datetime"].dt.date
 daily_counts = (
     df.groupby(["PatientType", "CallDate"])
     .size()
@@ -76,8 +76,9 @@ daily_counts = (
 # essential input for the discrete-event simulation and optimization of slot lengths
 
 for patientType, sub in splitDFs.items():
+    # plot the histogram and Q-Q plot for each patient type
     print(f"\n--- Type {patientType} summary ---")
-    print("Number of patient in type I group:", len(sub))
+    print(f"Number of patient in type {patientType}:", len(sub))
 
     stats = sub["Duration"].agg(["mean", "std", "median"])
     p90 = np.percentile(sub["Duration"], 90)
@@ -95,5 +96,19 @@ for patientType, sub in splitDFs.items():
     plt.suptitle(f"Q-Q plot (normal) - Type {patientType}")
     plt.show()
 
+# Type 1: fit Normal (mu, sigma) and Poisson arrivals per day
+if "Type 1" in splitDFs:
+    # let group1 be the dataframe for Type 1 patients
+    group1 = splitDFs["Type 1"]
+    mu_hat = group1["Duration"].mean()
+    sigma_hat = group1["Duration"].std(ddof=1)
+    print("\nType 1 duration estimated μ, σ:", mu_hat, sigma_hat)
+
+    # daily arrivals for Type 1
+    counts_type1 = group1.groupby("CallDate").size()
+    lambda_hat = counts_type1.mean()
+    print("Type 1 daily arrival counts (mean=λ̂):", lambda_hat)
+    print("Type 1 daily counts (summary):")
+    print(counts_type1.describe())
 
 # print(df.head())
