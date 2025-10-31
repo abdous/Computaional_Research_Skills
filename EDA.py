@@ -5,17 +5,11 @@ import scipy.stats as st
 from datetime import datetime, timedelta
 
 # Make some constants for easy adjustment
-DATA_PATH = r"C:\Users\dourh\OneDrive\Bureau\UM\Computational Research Skills(E&OR)\ScanRecords.csv"  # <-- replace with your dataset filename
-# DATE_COL = "Date"
-# TIME_COL = "Time"
-# DUR_COL = "Duration"
-# TYPE_COL = "PatientType"
+DATA_PATH = r"C:\Users\dourh\OneDrive\Bureau\UM\Computational Research Skills(E&OR)\ScanRecords.csv"  # replace with your dataset filename
 
-# Data loading and initial exploration
+
+# Loading data and initial exploration
 df = pd.read_csv(DATA_PATH)
-print("Rows,cols:", df.shape)
-# print(df.head())
-# print(df.info())
 
 
 # Parse date and time into single column Datetime
@@ -35,8 +29,6 @@ def make_datetime(row):
 
 
 df["Datetime"] = df.apply(make_datetime, axis=1)
-# print(df[["Date", TIME_COL, "Datetime"]].head())
-
 
 # Check for missing or invalid datetimes
 # print("\nChecking datetime values:")
@@ -47,15 +39,13 @@ df["Datetime"] = df.apply(make_datetime, axis=1)
 # print(f"Percentage missing: {(df['Duration'].isna().sum() / len(df)) * 100:.2f}%")
 # i check for invalid datetime/duration entries and there are none in this dataset
 
-#  Separate dataframes by patient type in dictionary dfs for easy access later
-#  print(f"Missing datetime values: {df['PatientType'].isna().sum()}") # there are no missing patient type entries
-patientType_values = df["PatientType"].unique()
-print("Patient types:", patientType_values)
+#  Separate dataframes by patient scan type in dictionary for easy access
+#  Here also check for missing values but there are no missing patient type entries
+patienScanType = df["PatientType"].unique()
 df["CallDate"] = df["Datetime"].dt.date
-splitDFs = {tp: df[df["PatientType"] == tp].copy() for tp in patientType_values}
-# print("splitDFs", splitDFs)
+splitedData = {tp: df[df["PatientType"] == tp].copy() for tp in patienScanType}
 
-# Daily counts of scans by patient type
+# Daily counts of scans by type
 daily_counts = (
     df.groupby(["PatientType", "CallDate"])
     .size()
@@ -64,51 +54,54 @@ daily_counts = (
     .astype(int)
 )
 
-# print(daily_counts.head(10))
 
-# Histogram for skewness checking
-# mean & std sensitive to outliers
-# Median & 90th percentile — robust indicators
-# Q-Q plot — see whether Normal is a bad assumption
-# Helps us choose: gamma/lognormal vs empirical bootstrap
-# Here we are triying to extracts the key statistics and visual checks needed
-# to decide the correct duration distributions for each patient type, which is
-# essential input for the discrete-event simulation and optimization of slot lengths
-
-for patientType, sub in splitDFs.items():
+for patientType, sub in splitedData.items():
     # plot the histogram and Q-Q plot for each patient type
-    print(f"\n--- Type {patientType} summary ---")
-    print(f"Number of patient in type {patientType}:", len(sub))
+    print(f"\n--- summary for {patientType} ---")
+    print(f"Number of patient in {patientType}:", len(sub))
 
     stats = sub["Duration"].agg(["mean", "std", "median"])
-    p90 = np.percentile(sub["Duration"], 90)
+    p90 = np.percentile(sub["Duration"], 90)  # 90th percentile
 
     print(stats)
-    print("p90:", p90)
+    print("90th percentile:", p90)
 
     plt.figure(figsize=(10, 4))
     plt.subplot(1, 2, 1)
     plt.hist(sub["Duration"], bins=20)
-    plt.title(f"Histogram durations - Type {patientType}")
+    plt.title(f"Histogram durations - {patientType}")
 
     plt.subplot(1, 2, 2)
     st.probplot(sub["Duration"], dist="norm", plot=plt)
-    plt.suptitle(f"Q-Q plot (normal) - Type {patientType}")
+    plt.suptitle(f"Check for normality - {patientType}")
     plt.show()
 
-# Type 1: fit Normal (mu, sigma) and Poisson arrivals per day
-if "Type 1" in splitDFs:
-    # let group1 be the dataframe for Type 1 patients
-    group1 = splitDFs["Type 1"]
-    mu_hat = group1["Duration"].mean()
-    sigma_hat = group1["Duration"].std(ddof=1)
+# Fit Normal (mu, sigma) and Poisson arrivals per day for Type 1 patients scans
+if "Type 1" in splitedData:
+    typeI = splitedData["Type 1"]
+    mu_hat = typeI["Duration"].mean()
+    sigma_hat = typeI["Duration"].std(ddof=1)
     print("\nType 1 duration estimated μ, σ:", mu_hat, sigma_hat)
 
     # daily arrivals for Type 1
-    counts_type1 = group1.groupby("CallDate").size()
+    counts_type1 = typeI.groupby("CallDate").size()
     lambda_hat = counts_type1.mean()
     print("Type 1 daily arrival counts (mean=λ̂):", lambda_hat)
     print("Type 1 daily counts (summary):")
     print(counts_type1.describe())
 
-# print(df.head())
+
+# For Type 2 as suggested above we can try fitting lognormal or gamma distributions"
+if "Type 2" in splitedData:
+    typeII = splitedData["Type 2"]
+    # Basic quantiles and a kernel density estimate suggestion
+    print("\nType 2 duration quantiles:")
+    print(typeII["Duration"].quantile([0.1, 0.25, 0.5, 0.75, 0.9, 0.95]))
+    # Try fit candidate parametric distributions (lognormal, gamma)
+    # Fit lognormal: take log of durations >0
+    positive = typeII[typeII["Duration"] > 0]["Duration"]
+    if len(positive) > 5:
+        ln_params = st.lognorm.fit(positive, floc=0)  # shape, loc, scale
+        print("Type 2 lognormal params (shape, loc, scale):", ln_params)
+        gamma_params = st.gamma.fit(positive)
+        print("Type 2 gamma params (a, loc, scale):", gamma_params)
