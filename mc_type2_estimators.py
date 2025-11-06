@@ -8,7 +8,7 @@ import scipy.stats as st
 from tqdm import trange
 
 # Make sure to adjust the data path as needed
-DATA_PATH = r"C:\Users\dourh\OneDrive\Bureau\UM\Computational Research Skills(E&OR)\ScanRecords.csv"
+DATA_PATH = r"C:\Users\dourh\OneDrive\Bureau\UM\Computational Research Skills(E&OR)\ScanRecords.csv"  # need to change this path accordingly
 df = pd.read_csv(DATA_PATH)
 type2 = df[df["PatientType"] == "Type 2"]["Duration"].dropna().values
 n = len(type2)
@@ -147,5 +147,5 @@ for sc_name, sampler in scenarios.items():
 # Display the results
 pd.set_option("display.precision", 4)
 for sc_name, res in results.items():
-    print(f"\n***** Scenario: {sc_name} *****")
+    print(f"\nScenario: {sc_name}")
     print(pd.DataFrame(res).T)
