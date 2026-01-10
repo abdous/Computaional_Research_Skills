@@ -51,7 +51,7 @@ def build_schedule(df, slot_len_t1, slot_len_t2, system, seed):
 
         earliest_day = call_day + 1
 
-        if system == "old": # Old system: seperate machines (type 1 on first machine, type 2 on second machine)
+        if system == "old": # Old system: separate machines (type 1 on first machine, type 2 on second machine)
             m = 0 if patient_type == "Type 1" else 1
             d, start = earliest_slot(planned_end[m], earliest_day, slot_len)
 
@@ -101,7 +101,8 @@ def run_replication(slot_pair, system, seed):
 
             overtime, service = execute_day(todays)
             total_service += service
-            finish_times.append(overtime + WORKDAY_MIN if service > 0 else 0)
+            finish = WORKDAY_MIN + overtime if service > 0 else 0
+            finish_times.append(finish)
         
         # Compute daily KPIs
         avg_wait = float(np.mean(appt_waits)) if appt_waits else 0.0
