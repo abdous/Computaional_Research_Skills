@@ -4,6 +4,7 @@ import numpy as np
 # Importing data obtained from part 1
 DATA_PATH = "synthetic_month.csv"
 df = pd.read_csv(DATA_PATH)
+# text
 
 # For easy scheduling, convert durations to minutes
 df["Duration_min"] = df["Duration"] * 60
