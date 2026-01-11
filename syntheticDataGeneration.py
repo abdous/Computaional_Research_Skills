@@ -15,9 +15,8 @@ mu_t1, sigma_t1 = 0.4285, 0.0973
 
 # Type 2 parameters from EDA / bootstrap
 lambda_t2 = 10.0  # daily arrivals
-df = pd.read_csv(
-    r"C:\Users\dourh\OneDrive\Bureau\UM\Computational Research Skills(E&OR)\ScanRecords.csv"
-)
+DATA_PATH = "data/ScanRecords.csv"
+df = pd.read_csv(DATA_PATH)
 type2_durations = df[df["PatientType"] == "Type 2"]["Duration"].values
 
 # Generate Type 1 data
