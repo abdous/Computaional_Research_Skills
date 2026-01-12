@@ -1,7 +1,7 @@
-# ================================
+# Econometric part of the project 
 # Step 1: Exploratory Data Analysis
 # MRI Scan Case - ScanRecords.csv
-# ================================
+
 
 # Install 
 # install.packages(c("tidyverse", "lubridate"))
